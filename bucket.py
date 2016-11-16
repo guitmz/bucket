@@ -66,9 +66,10 @@ class BucketPrompt(Cmd):
             assert len(args) > 0
             file_name = args
             try:
-                self.s3.Object(self.bucket_name, file_name).load()
-                self.s3.Object(self.bucket_name, file_name).delete()
-                print('File %s deleted!' % file_name)
+                if should('Delete %s?' % file_name):
+                    self.s3.Object(self.bucket_name, file_name).load()
+                    self.s3.Object(self.bucket_name, file_name).delete()
+                    print('File %s deleted!' % file_name)
             except ClientError:
                 print('File %s not found in bucket %s' % (file_name, self.bucket_name))
         except AssertionError:
