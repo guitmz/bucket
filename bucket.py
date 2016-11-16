@@ -49,13 +49,14 @@ class BucketPrompt(Cmd):
     def upload_file(self, path, compress):
         try:
             with open(path, 'rb') as f:
-                filename = basename = os.path.basename(path)
+                filename = os.path.basename(path)
+                s3_obj = self.s3.Object(self.bucket_name, filename)
                 if compress:
                     gz_file = gzip_stream(f)
                     filename += '.gz'
-                    self.s3.Object(self.bucket_name, filename).put(Body=gz_file)
+                    s3_obj.put(Body=gz_file)
                 else:
-                    self.s3.Object(self.bucket_name, basename).put(Body=f)
+                    s3_obj.put(Body=f)
                 print('%s uploaded!' % filename)
         except FileNotFoundError:
             print('File %s not found!' % path)
