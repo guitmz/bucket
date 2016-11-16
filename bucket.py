@@ -1,19 +1,21 @@
 #!/usr/bin/python
+
 import boto3
-import gzip
 import os
 from botocore.exceptions import ClientError
 from cmd import Cmd
-from io import BytesIO
+from hurry.filesize import size
+from utils import gzip_stream, should
 
 
 class BucketPrompt(Cmd):
     s3 = boto3.resource('s3')
     bucket = None
     bucket_name = None
+    here = os.path.abspath(os.path.dirname(__file__))
 
     def do_use(self, args):
-        """Changes your current bucket."""
+        """Changes your current bucket. Example: use my-bucket"""
         try:
             assert len(args) > 0
             try:
@@ -35,35 +37,26 @@ class BucketPrompt(Cmd):
             print('This command takes no arguments!')
 
     def do_up(self, args):
-        """Uploads a file to your current bucket."""
+        """Uploads a file to your current bucket. Compression is available (gzip)."""
         try:
             assert len(args) > 0
             path = args
-            compress = self.should_compress_file()
+            compress = should('Compress file?')
             self.upload_file(path, compress)
         except AssertionError:
             print("I need a file name!")
 
-    @staticmethod
-    def gzip_stream(file):
-        gz_stream = BytesIO()
-        with gzip.GzipFile(fileobj=gz_stream, mode='wb') as gzf:
-            gzf.write(file.read())
-        gz_stream.seek(0)
-        return gz_stream
-
     def upload_file(self, path, compress):
-        basename = os.path.basename(path)
         try:
             with open(path, 'rb') as f:
+                filename = basename = os.path.basename(path)
                 if compress:
-                    gz_file = self.gzip_stream(f)
-                    compressed_file = basename + '.gz'
-                    self.s3.Object(self.bucket_name, compressed_file).put(Body=gz_file)
-                    print('%s uploaded!' % compressed_file)
+                    gz_file = gzip_stream(f)
+                    filename += '.gz'
+                    self.s3.Object(self.bucket_name, filename).put(Body=gz_file)
                 else:
                     self.s3.Object(self.bucket_name, basename).put(Body=f)
-                    print('%s uploaded!' % basename)
+                print('%s uploaded!' % filename)
         except FileNotFoundError:
             print('File %s not found!' % path)
 
@@ -79,18 +72,24 @@ class BucketPrompt(Cmd):
             except ClientError:
                 print('File %s not found in bucket %s' % (file_name, self.bucket_name))
         except AssertionError:
-            print("I need a file name!")
+            print('I need a file name!')
 
     def do_ls(self, args):
-        """List files and folders in your current bucket."""
+        """List files and folders in your current bucket. If no bucket is selected, lists available buckets instead."""
         try:
             assert len(args) == 0
             try:
                 assert self.bucket is not None
                 for obj in self.bucket.objects.all():
-                    print(obj.bucket_name, obj.key)
+                    print('\t%8s %8s %8s %8s' % (
+                        obj.last_modified,
+                        obj.owner['DisplayName'],
+                        size(obj.size),
+                        obj.key
+                    ))
             except AssertionError:
-                print('I need a bucket!')
+                for bucket in self.s3.buckets.all():
+                    print('\t%s' % bucket.name)
         except AssertionError:
             print('This command takes no arguments!')
 
@@ -99,22 +98,16 @@ class BucketPrompt(Cmd):
         """Quits the program."""
         try:
             assert len(args) == 0
-            print("¯\_(ツ)_/¯")
+            print('Bye! ¯\_(ツ)_/¯')
             raise SystemExit
         except AssertionError:
             print('This command takes no arguments!')
-
-    @staticmethod
-    def should_compress_file():
-        while True:
-            user_input = input('Compress file? [y/n]: ')
-            if user_input in ['y', 'Y']:
-                return True
-            elif user_input in ['n', 'N']:
-                return False
 
 
 if __name__ == '__main__':
     prompt = BucketPrompt()
     prompt.prompt = '>_ '
-    prompt.cmdloop('Starting prompt...')
+    try:
+        prompt.cmdloop('Starting prompt...')
+    except KeyboardInterrupt:
+        raise SystemExit

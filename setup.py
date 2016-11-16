@@ -10,6 +10,7 @@ setup(
     author_email='thomazi@linux.com',
     description='CLI tool to manage S3 files',
     install_requires=[
-        'boto3'
+        'boto3',
+        'hurry.filesize'
     ]
 )
