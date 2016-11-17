@@ -5,7 +5,7 @@ import os
 from botocore.exceptions import ClientError
 from cmd import Cmd
 from hurry.filesize import size
-from utils import gzip_stream, should
+from utils import gzip_stream, should, ProgressPercentage
 
 
 class BucketPrompt(Cmd):
@@ -50,13 +50,22 @@ class BucketPrompt(Cmd):
         try:
             with open(path, 'rb') as f:
                 filename = os.path.basename(path)
-                s3_obj = self.s3.Object(self.bucket_name, filename)
                 if compress:
                     gz_file = gzip_stream(f)
                     filename += '.gz'
-                    s3_obj.put(Body=gz_file)
+                    self.bucket.upload_fileobj(gz_file,
+                                               filename,
+                                               Callback=ProgressPercentage(
+                                                   filename,
+                                                   gz_file.getbuffer().nbytes
+                                               ))
                 else:
-                    s3_obj.put(Body=f)
+                    self.bucket.upload_fileobj(f,
+                                               filename,
+                                               Callback=ProgressPercentage(
+                                                   filename,
+                                                   os.path.getsize(path)
+                                               ))
                 print('%s uploaded!' % filename)
         except FileNotFoundError:
             print('File %s not found!' % path)
