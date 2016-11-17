@@ -4,6 +4,9 @@ An interactive shell to manage files in AWS S3 written in Python 3.
 
 Bucket is a CLI to list, upload and delete (more to come!) files in a AWS S3 bucket. There are other tools available and I but I wanted a interactive one.
 
+# Requirements
+Only `boto3` and `hurry.filesize` are required, along with, of course, your AWS credentials in `~/.aws/credentials` file.
+
 # Usage
 To start using your bucket: 
 
