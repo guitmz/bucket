@@ -36,39 +36,61 @@ class BucketPrompt(Cmd):
         except AssertionError:
             print('This command takes no arguments!')
 
+    def do_down(self, args):
+        """Uploads a file to your current bucket. Compression is available (gzip)."""
+        try:
+            args = args.split()
+            assert len(args) == 2
+            file_name = args[0]
+            destination_path = args[1]
+            file_size = self.s3.ObjectSummary(self.bucket_name, file_name).size
+            with open(destination_path, 'wb') as data:
+                self.bucket.download_fileobj(
+                    file_name,
+                    data,
+                    Callback=ProgressPercentage(
+                        file_name,
+                        file_size
+                    )
+                )
+        except AssertionError:
+            print("Check your arguments!")
+
     def do_up(self, args):
         """Uploads a file to your current bucket. Compression is available (gzip)."""
         try:
             assert len(args) > 0
             path = args
             compress = should('Compress file?')
-            self.upload_file(path, compress)
+            self.prepare_upload(path, compress)
         except AssertionError:
             print("I need a file name!")
 
-    def upload_file(self, path, compress):
+    def prepare_upload(self, path, compress):
         try:
             with open(path, 'rb') as f:
-                filename = os.path.basename(path)
+                file_name = os.path.basename(path)
                 if compress:
                     gz_file = gzip_stream(f)
-                    filename += '.gz'
-                    self.bucket.upload_fileobj(gz_file,
-                                               filename,
-                                               Callback=ProgressPercentage(
-                                                   filename,
-                                                   gz_file.getbuffer().nbytes
-                                               ))
+                    file_name += '.gz'
+                    file_size = gz_file.getbuffer().nbytes
+                    self.upload_file(gz_file, file_name, file_size)
                 else:
-                    self.bucket.upload_fileobj(f,
-                                               filename,
-                                               Callback=ProgressPercentage(
-                                                   filename,
-                                                   os.path.getsize(path)
-                                               ))
-                print('%s uploaded!' % filename)
+                    file_size = os.path.getsize(path)
+                    self.upload_file(f, file_name, file_size)
+                print('%s uploaded!' % file_name)
         except FileNotFoundError:
             print('File %s not found!' % path)
+
+    def upload_file(self, file, file_name, file_size):
+        self.bucket.upload_fileobj(
+            file,
+            file_name,
+            Callback=ProgressPercentage(
+                file_name,
+                file_size
+            )
+        )
 
     def do_del(self, args):
         """Deletes a file from your current bucket."""

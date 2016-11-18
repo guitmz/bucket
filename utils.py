@@ -22,7 +22,7 @@ def gzip_stream(file):
     return gz_stream
 
 
-# Ripped of from Boto3 docs with a minor tweak in how it displays the sizes.
+# Borrowed from boto3 docs with a minor tweak in how it displays the sizes.
 class ProgressPercentage(object):
     def __init__(self, filename, size):
         self._filename = filename
