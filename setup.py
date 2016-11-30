@@ -14,7 +14,7 @@ setup(
     author='Guilherme Thomazi Bonicontro',
     author_email='thomazi@linux.com',
     description='CLI tool to manage S3 files',
-    classifiers = [
+    classifiers=[
         'Intended Audience :: Developers',
         'Topic :: Utilities',
         'License :: Public Domain',

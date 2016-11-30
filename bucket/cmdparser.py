@@ -17,8 +17,7 @@ class CmdParser(object):
         args = command_and_args[1:]
         try:
             getattr(self, cmd)(args)
-        except Exception as e:
-            print(e)
+        except AttributeError:
             self.help()
 
     def use(self, args):
