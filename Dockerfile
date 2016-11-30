@@ -1,4 +1,5 @@
 FROM python:alpine
+
 MAINTAINER Guilherme Thomazi Bonicontro <thomazi@linux.com>
 
 ADD . /bucket
