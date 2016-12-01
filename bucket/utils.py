@@ -1,8 +1,8 @@
 import gzip
 import threading
 from io import BytesIO
-from hurry.filesize import size as sz
 import sys
+from hurry.filesize import size as sz
 
 
 def should(msg):
@@ -35,6 +35,6 @@ class ProgressPercentage(object):
             self._seen_so_far += bytes_amount
             percentage = (self._seen_so_far / self._size) * 100
             sys.stdout.write('\r%s  %s / %s  (%.2f%%)' % (
-                    self._filename, sz(self._seen_so_far), sz(self._size),
-                    percentage))
+                self._filename, sz(self._seen_so_far), sz(self._size),
+                percentage))
             sys.stdout.flush()
