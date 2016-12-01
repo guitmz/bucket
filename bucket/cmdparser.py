@@ -1,12 +1,14 @@
 import os
-import boto3
 from botocore.exceptions import ClientError
 from hurry.filesize import size
 from bucket.utils import ProgressPercentage, gzip_stream, should
+from bucket.s3 import S3Resource
 
 
 class CmdParser(object):
-    s3 = boto3.resource('s3')
+    """Command parser"""
+
+    s3 = S3Resource().resource
     bucket = None
     bucket_name = None
     here = os.path.abspath(os.path.dirname(__file__))
